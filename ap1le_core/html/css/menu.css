@@ -1,0 +1,222 @@
+/* Menuer (js/menu.js). Glas-variablerne og grundopsætningen står i base.css */
+
+.menu {
+    position: fixed;
+    top: 50%;
+    display: flex;
+    flex-direction: column;
+    width: 22rem;
+    max-width: calc(100vw - 2rem);
+    max-height: 80vh;
+    overflow: hidden; /* så listen kan rulle inden i de runde hjørner */
+    border-radius: var(--radius-panel);
+    background: var(--glass-sheen), var(--glass-bg-strong);
+    border: 1px solid;
+    border-color: var(--glass-edge-hi) var(--glass-edge-lo) var(--glass-edge-lo) var(--glass-edge-hi);
+    box-shadow: var(--glass-shadow);
+    pointer-events: auto; /* siden er ellers ikke til at klikke på (base.css) */
+    transform: translateY(-50%);
+    animation: menu-in 0.22s var(--ease-out) both;
+}
+
+/* Placering fra config.lua (Config.Menu.Position). --from = hvor den glider ind fra */
+.menu.is-right { right: 2rem; --from: 1rem; transform-origin: right center; }
+.menu.is-left { left: 2rem; --from: -1rem; transform-origin: left center; }
+
+/* Glasset "vokser frem" fra siden: et lille skub og en lille skalering */
+@keyframes menu-in {
+    from {
+        opacity: 0;
+        transform: translate(var(--from), -50%) scale(0.97);
+    }
+}
+
+/* ---------- Toppen: tilbage | titel | luk ---------- */
+
+.menu-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.95rem 0.85rem 0.7rem 1.15rem;
+    border-bottom: 1px solid var(--separator);
+}
+
+/* Apples "Headline": fed, lidt strammere skrift */
+.menu-title {
+    flex: 1;
+    min-width: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* Runde ikon-knapper (tilbage og luk): en grå cirkel uden kant, som Apples "luk"-knap */
+.menu-icon-button {
+    display: flex;
+    flex: none;
+    justify-content: center;
+    align-items: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    background: var(--fill-tertiary);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.menu-icon-button:hover,
+.menu-icon-button:focus-visible {
+    outline: none;
+    color: var(--text);
+    background: var(--fill);
+}
+
+/* Synlig ring, når knappen har fokus fra tastaturet (Tab) */
+.menu-icon-button:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.7);
+    outline-offset: 2px;
+}
+
+/* ---------- Listen ---------- */
+
+.menu-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.5rem;
+    overflow-y: auto;
+}
+
+/* En diskret rullebjælke (Chrome-syntaks) */
+.menu-list::-webkit-scrollbar {
+    width: 0.35rem;
+}
+
+.menu-list::-webkit-scrollbar-thumb {
+    background: var(--fill);
+    border-radius: var(--radius-capsule);
+}
+
+/* Én mulighed: ikon | titel og beskrivelse | pil (undermenu).
+   Radius = menuens radius minus listens luft (0,5rem), så hjørnerne følger menuens hjørner */
+.menu-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.6rem 0.7rem;
+    text-align: left;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: calc(var(--radius-panel) - 0.5rem);
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+/* Den valgte: en lys, grå flade (som Apples valgte linje) og ikonet i hovedfarven. Kun :focus - musen flytter
+   fokus (menu.js), så der aldrig ser ud til at være to valgte på én gang */
+.menu-option:focus {
+    outline: none;
+    background: var(--fill-secondary);
+    border-color: rgba(255, 255, 255, 0.06);
+}
+
+.menu-option.is-readonly {
+    cursor: default;
+}
+
+.menu-option:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Ikonet i en rund flade. Bliver rød, når muligheden er valgt */
+.menu-option-icon {
+    display: flex;
+    flex: none;
+    justify-content: center;
+    align-items: center;
+    width: 2rem;
+    height: 2rem;
+    font-size: 0.9rem;
+    background: var(--fill-tertiary);
+    border-radius: 50%;
+    transition: background-color 0.15s ease;
+}
+
+.menu-option:focus .menu-option-icon {
+    color: var(--text);
+    background: var(--brand);
+}
+
+.menu-option:disabled .menu-option-icon {
+    color: inherit;
+    background: var(--fill-tertiary);
+}
+
+.menu-option-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.menu-option-title {
+    display: block;
+    font-size: 0.92rem;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+    overflow-wrap: anywhere;
+}
+
+.menu-option-description {
+    display: block;
+    margin-top: 0.1rem;
+    font-size: max(calc(12px * var(--ui-scale)), 0.8rem);
+    line-height: 1.35;
+    color: var(--text-muted);
+    overflow-wrap: anywhere;
+}
+
+.menu-option-arrow {
+    flex: none;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.menu-empty {
+    padding: 0.75rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+/* ---------- Bunden: tastatur-hjælp ---------- */
+
+.menu-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.9rem;
+    padding: 0.55rem 1.1rem 0.7rem;
+    font-size: max(calc(12px * var(--ui-scale)), 0.72rem);
+    color: var(--text-muted);
+    border-top: 1px solid var(--separator);
+}
+
+.menu-footer kbd {
+    display: inline-block;
+    min-width: 1.3rem;
+    padding: 0.05rem 0.3rem;
+    margin-right: 0.25rem;
+    font-family: inherit;
+    font-size: max(calc(12px * var(--ui-scale)), 0.7rem);
+    font-weight: 600;
+    text-align: center;
+    color: var(--text);
+    background: var(--fill);
+    border-radius: 0.35rem;
+}

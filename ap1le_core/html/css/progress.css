@@ -1,0 +1,135 @@
+/* Progress-bjælken (js/progress.js). Glas-variablerne, .keycap og grundopsætningen står i base.css */
+
+/* Nederst i midten. 12vh fra bunden, så den ikke står oven i GTA's undertekster (dem nederst på skærmen).
+   Står hjælpeteksten også nederst i midten, rykker bjælken op over den: --textui-h er hjælpetekstens højde,
+   sat af js/textui.js (0, når den ikke vises dér). Vises radaren nederst i midten, står bjælken (og hjælpeteksten)
+   over den: --radar-h er radarens top målt fra bunden, sat af js/radar.js (0, når den ikke vises dér).
+   Har et andet script et speedometer nederst i midten (SetSpeedo), står bjælken også over det: --speedo-h er
+   speedometerets top + luft, sat af js/radar.js (0, når der intet er). max() tager den højeste af dem */
+.progress {
+    position: fixed;
+    left: 50%;
+    bottom: calc(max(12vh, var(--radar-h, 0px), var(--speedo-h, 0px)) + var(--textui-h, 0px));
+    width: 24rem;
+    max-width: calc(100vw - 2rem);
+    padding: 0.85rem 1.1rem 0.9rem;
+    overflow: hidden;
+    border-radius: var(--radius-banner);
+    background: var(--glass-sheen), var(--glass-bg);
+    border: 1px solid;
+    border-color: var(--glass-edge-hi) var(--glass-edge-lo) var(--glass-edge-lo) var(--glass-edge-hi);
+    box-shadow: var(--glass-shadow);
+    transform: translateX(-50%);
+    animation: progress-in 0.24s var(--ease-out) both;
+}
+
+@keyframes progress-in {
+    from {
+        opacity: 0;
+        transform: translate(-50%, 0.75rem) scale(0.96);
+    }
+}
+
+.progress.is-leaving {
+    animation: progress-out 0.2s ease-in forwards;
+}
+
+@keyframes progress-out {
+    to {
+        opacity: 0;
+        transform: translate(-50%, 0.5rem);
+    }
+}
+
+/* Øverst: ikon | tekst | procent */
+.progress-head {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-size: 0.92rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.progress-icon {
+    flex: none;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.progress-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.progress-percent {
+    flex: none;
+    font-size: max(calc(12px * var(--ui-scale)), 0.8rem);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums; /* tallene har samme bredde, så teksten ikke hopper */
+    color: var(--text-muted);
+}
+
+/* Selve bjælken: en kapsel som Apples ProgressView */
+.progress-track {
+    height: 0.375rem;
+    margin-top: 0.65rem;
+    overflow: hidden;
+    border-radius: var(--radius-capsule);
+    background: var(--fill);
+}
+
+/* Fylder fra venstre mod højre på præcis den tid, Lua siger (--duration). Uden glød, og rød kun når den annulleres
+   (farve bruges sparsomt, HIG > Color) */
+.progress-fill {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--text); /* hvid, så den kan skelnes fra sporet over et lyst spil; rød kun ved annulleret */
+    transform-origin: left;
+    animation: progress-fill var(--duration, 5000ms) linear forwards;
+}
+
+@keyframes progress-fill {
+    from {
+        transform: scaleX(0);
+    }
+}
+
+/* Færdig: helt fuld (uden animation er transform "none" = fuld bredde) */
+.progress.is-done .progress-fill {
+    animation: none;
+}
+
+/* Annulleret: bjælken stopper, hvor den var, og bliver rød */
+.progress.is-cancelled .progress-fill {
+    background: var(--type-error);
+    animation-play-state: paused;
+}
+
+.progress.is-cancelled .progress-percent {
+    color: var(--error-text);
+}
+
+/* "[X] Annuller" under bjælken */
+.progress-hint {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.55rem;
+    font-size: max(calc(12px * var(--ui-scale)), 0.75rem);
+    color: var(--text-muted);
+}
+
+.progress-hint .keycap {
+    min-width: 1.35rem;
+    height: 1.35rem;
+    font-size: max(calc(11px * var(--ui-scale)), 0.7rem);
+}
+
+.progress.is-cancelled .progress-hint {
+    visibility: hidden; /* skjules, men fylder stadig, så boksen ikke skifter højde */
+}

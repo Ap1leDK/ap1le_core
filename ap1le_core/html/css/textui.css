@@ -1,0 +1,86 @@
+/* Hjælpeteksten "[E] Gå på vagt" (js/textui.js). Glas-variablerne, .keycap og grundopsætningen står i base.css */
+
+.textui {
+    position: fixed;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    max-width: 22rem;
+    padding: 0.5rem 1.1rem 0.5rem 0.5rem;
+    overflow: hidden;
+    /* En kapsel (som Apples svævende knapper). Bliver teksten flere linjer, bliver den en blød, afrundet boks */
+    border-radius: calc(1.375rem + 1px); /* halv højde: tasten (1,75rem) + luft (2 x 0,5rem) + kanten (2 x 1px) */
+    background: var(--glass-sheen), var(--glass-bg);
+    border: 1px solid;
+    border-color: var(--glass-edge-hi) var(--glass-edge-lo) var(--glass-edge-lo) var(--glass-edge-hi);
+    box-shadow: var(--glass-shadow);
+    font-size: 0.92rem;
+    font-weight: 600;
+    /* --at = hvor den står, --from = hvor den glider ind fra. Begge sættes af placeringen herunder */
+    transform: var(--at);
+    animation: textui-in 0.24s var(--ease-out) both;
+}
+
+/* Uden tast: lige meget luft i begge sider */
+.textui.no-key {
+    padding-left: 1.1rem;
+}
+
+/* Tasten står i en cirkel/kapsel inde i kapslen, så hjørnerne følger hinanden */
+.textui .keycap {
+    min-width: 1.75rem;
+    height: 1.75rem;
+    border-radius: var(--radius-capsule);
+}
+
+.textui-icon {
+    flex: none;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.textui-text {
+    min-width: 0;
+    line-height: 1.35;
+    white-space: pre-line; /* \n i teksten bliver til nye linjer */
+    overflow-wrap: anywhere;
+}
+
+/* ---------- Placering (Config.TextUI.Position) ---------- */
+
+/* Lidt under midten (62%), så den ikke rammer notifikationerne øverst til højre, når der er mange af dem.
+   Nederst i midten: 12vh fra bunden ligesom progress-bjælken (over GTA's undertekster) - bjælken rykker op.
+   Vises radaren nederst i midten og er den højere end 12vh, står hjælpeteksten over den (--radar-h, js/radar.js).
+   Det samme med et speedometer fra et andet script (--speedo-h, js/radar.js) */
+.textui.right-center { top: 62%; right: 1.5rem; --at: translateY(-50%); --from: translate(1rem, -50%); }
+.textui.left-center { top: 62%; left: 1.5rem; --at: translateY(-50%); --from: translate(-1rem, -50%); }
+.textui.top-center { top: 1.5rem; left: 50%; --at: translateX(-50%); --from: translate(-50%, -1rem); }
+.textui.bottom-center { bottom: max(12vh, var(--radar-h, 0px), var(--speedo-h, 0px)); left: 50%; --at: translateX(-50%); --from: translate(-50%, 1rem); }
+
+/* En åben menu i samme side dækker hjælpeteksten - skjul den imens (den kommer igen, når menuen lukker).
+   Det samme med et ID-kort, der er så højt, at det når ned til hjælpeteksten (is-tall, sat af js/card.js).
+   Virker, fordi #textui står EFTER #menu og #card i index.html */
+.menu.is-left:not([hidden]) ~ .textui.left-center,
+.menu.is-right:not([hidden]) ~ .textui.right-center,
+.card.is-tall.is-left:not([hidden]) ~ .textui.left-center,
+.card.is-tall.is-right:not([hidden]) ~ .textui.right-center {
+    visibility: hidden;
+}
+
+@keyframes textui-in {
+    from {
+        opacity: 0;
+        transform: var(--from);
+    }
+}
+
+.textui.is-leaving {
+    animation: textui-out 0.15s ease-in forwards;
+}
+
+@keyframes textui-out {
+    to {
+        opacity: 0;
+        transform: var(--from);
+    }
+}

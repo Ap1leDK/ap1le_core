@@ -1,0 +1,171 @@
+/* Fælles for hele NUI-siden: farver, glas og grundopsætning. Bruges af alle de andre css-filer
+   (og af ap1le_policetablet, som henter denne fil - derfor skifter variablerne aldrig navn).
+
+   Designet følger Apples Human Interface Guidelines (Liquid Glass, 2025): kontroller svæver i et lag af glas
+   over indholdet, hjørnerne er runde og "koncentriske" (en flade inden i en anden har radius = ydre radius minus
+   afstanden imellem), knapper er kapsler, farve bruges sparsomt (kun status og den vigtigste handling), og
+   hierarkiet vises med vægt og størrelse - ikke med VERSALER.
+
+   OBS: backdrop-filter (sløring) virker ikke her. NUI er et gennemsigtigt lag OVEN PÅ spillet, og browseren kan
+   ikke se spillets billede bag sig - så den har intet at sløre. Apples "regular"-glas laves i stedet med en mørk,
+   halvgennemsigtig flade, en lys kant (lyset, der brydes i glassets kant) og et svagt skær indefra.
+
+   FiveM's browser er en ældre Chrome (version 103): brug ikke color-mix(), :has(), CSS-nesting eller linear() */
+
+:root {
+    /* Farverne overskrives af js/core.js med dem fra config.lua */
+    --brand: #c72121;
+    /* "type-" foran, så en egen type i config.lua (fx "brand") aldrig kan overskrive en anden variabel.
+       Apples systemfarver i mørk tilstand med "øget kontrast" (HIG > Color), fordi spillet bag glasset kan være
+       alt fra nat til sne. De bruges også som tekst (radarens status), så de skal kunne læses */
+    --type-success: #4ad968;
+    --type-error: #ff6165;
+    --type-warning: #fedf43;
+    --type-info: #5cb8ff;
+
+    /* Glasset. Større flader (menuer, dialoger, ID-kort) er mere dækkende end små, ligesom hos Apple, så
+       teksten kan læses over et uroligt billede */
+    --glass-bg: rgba(30, 30, 34, 0.82);
+    --glass-bg-strong: rgba(28, 28, 31, 0.88); /* menuer og dialoger: mere dækkende, så teksten er let at læse */
+    /* Lyset falder ovenfra: et svagt skær i toppen, der toner ud */
+    --glass-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.012) 38%, transparent 60%);
+    --glass-edge-hi: rgba(255, 255, 255, 0.24); /* kanten øverst og til venstre, hvor "lyset" rammer */
+    --glass-edge-lo: rgba(255, 255, 255, 0.08);
+    /* Blød, bred skygge under glasset + lys kant indvendigt i top og bund (glassets tykkelse).
+       rem i stedet for px, så skyggen vokser med resten på en 4K-skærm */
+    --glass-shadow: 0 0.75rem 2.5rem rgba(0, 0, 0, 0.32), 0 0.125rem 0.5rem rgba(0, 0, 0, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+
+    /* Tekst: Apples "label" og "secondaryLabel" (mørk). Den dæmpede er lidt lysere end Apples 60 %, så den
+       kan læses (4,5:1) over et lyst spil (sne, himmel) */
+    --text: #ffffff;
+    --text-muted: rgba(235, 235, 245, 0.72);
+    /* Fejltekst og "påkrævet"-stjerne: lysere rød end --type-error, så den kan læses (4,5:1), også når
+       spillet bag glasset er helt lyst (sne, himmel) */
+    --error-text: #fca5a5;
+
+    /* Flader inde i glasset (felter, ikon-cirkler, valgt linje) og skillelinjer. Apples "fill"-niveauer i mørk
+       tilstand: grå med lav opacity, så glasset stadig skinner igennem */
+    --fill: rgba(120, 120, 128, 0.36);
+    --fill-secondary: rgba(120, 120, 128, 0.28);
+    --fill-tertiary: rgba(118, 118, 128, 0.2);
+    --separator: rgba(255, 255, 255, 0.09);
+
+    /* Former. Paneler har store, bløde hjørner; det, der står inden i, får en mindre radius, så hjørnerne følger
+       hinanden (koncentrisk). Knapper og mærker er kapsler */
+    --radius-panel: 1.375rem;
+    --radius-banner: 1.25rem;
+    --radius-control: 0.75rem;
+    --radius-capsule: 999px;
+
+    /* Bevægelse: kort og uden "hop" (det er en brugerflade, man bruger mange gange om dagen). Kurven er som
+       Apples ark: hurtig start og en lang, blød opbremsning */
+    --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+
+    /* Størrelsen på HELE brugerfladen (Config.Scale i config.lua, sat af js/core.js). 1 = fuld størrelse.
+       Standarden her skal passe med config.lua, så intet skifter størrelse, når indstillingerne kommer */
+    --ui-scale: 0.75;
+
+    /* Skriften vokser med skærmhøjden, så alt har samme størrelse i 1080p og 4K.
+       Ved fuld størrelse er 1,5vh = 16px på en 1080p-skærm, og mindst 14px, så teksten kan læses på 720p.
+       Alt i css-filerne er i rem (= denne størrelse), så det hele skaleres med --ui-scale.
+       De mindste tekster har desuden max(calc(12px * var(--ui-scale)), ...) i deres egne css-filer */
+    font-size: clamp(calc(14px * var(--ui-scale)), calc(1.5vh * var(--ui-scale)), calc(32px * var(--ui-scale)));
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Siden er helt gennemsigtig og kan ikke klikkes på, så den aldrig står i vejen for spillet.
+   Menuer og dialoger slår klik til igen for sig selv (pointer-events: auto) */
+html,
+body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: transparent;
+    pointer-events: none;
+    /* Apples SF Pro må kun bruges på Apples egne platforme, så den kan ikke lægges i resourcen. På Windows bruges
+       Segoe UI Variable (Windows 11), der ligner mest; Windows 10 får almindelig Segoe UI */
+    font-family: -apple-system, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+    color: var(--text);
+    letter-spacing: -0.005em; /* lidt strammere, som SF i tekststørrelse */
+}
+
+/* Knapper og felter bruger sidens skrift i stedet for browserens */
+button,
+input,
+select,
+textarea {
+    font: inherit;
+    color: inherit;
+}
+
+/* [hidden] skal altid vinde, også over display: flex osv. længere nede */
+[hidden] {
+    display: none !important;
+}
+
+/* En tast som en lille tastatur-knap, fx "E" i hjælpeteksten og "X" på progress-bjælken */
+.keycap {
+    display: inline-flex;
+    flex: none;
+    justify-content: center;
+    align-items: center;
+    min-width: 1.6rem;
+    height: 1.6rem;
+    padding: 0 0.45rem;
+    font-family: inherit;
+    font-size: max(calc(12px * var(--ui-scale)), 0.8rem);
+    font-weight: 600;
+    line-height: 1;
+    color: var(--text);
+    white-space: nowrap;
+    background: var(--fill);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-bottom-color: rgba(255, 255, 255, 0.06); /* lyset kommer ovenfra, så den ligner en tast */
+    border-radius: 0.4rem;
+}
+
+/* Folk, der har slået "reducer bevægelse" til i Windows: ingen glide- og ind/ud-animationer.
+   Notifikationernes, progress-bjælkens og ID-kortets tidslinje kører stadig - den viser, hvor lang tid der er
+   tilbage, og er ikke pynt */
+@media (prefers-reduced-motion: reduce) {
+    .notify,
+    .notify.is-leaving,
+    .menu,
+    .dialog,
+    .dialog-backdrop,
+    .progress,
+    .progress.is-leaving,
+    .textui,
+    .textui.is-leaving,
+    .card,
+    .card.is-leaving,
+    .card-photo img,
+    .radar,
+    .radar.is-leaving {
+        animation-duration: 0.01ms !important;
+    }
+
+    /* Fotoets "indlæser"-skær og radarens puls (EFTERLYST) gentages for evigt - de slås helt fra (de står bare stille) */
+    .card-photo.is-loading::after,
+    .radar-slot.is-wanted::after {
+        animation: none !important;
+    }
+
+    .card,
+    .radar::after,
+    .menu-option,
+    .menu-option-icon,
+    .menu-icon-button,
+    .dialog-button,
+    .dialog-field input,
+    .dialog-field select,
+    .dialog-field textarea {
+        transition: none !important;
+    }
+}

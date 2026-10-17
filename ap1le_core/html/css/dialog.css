@@ -1,0 +1,291 @@
+/* Dialoger (js/dialog.js): indtastning og "Er du sikker?". Glas-variablerne står i base.css */
+
+/* Den mørke flade bag dialogen. Fylder hele skærmen og fanger klik, så man ikke klikker "igennem" */
+.dialog-backdrop {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+    /* Apple anbefaler et mørkt lag på 35 % bag glas over et lyst billede (HIG > Materials) */
+    background: rgba(0, 0, 0, 0.35);
+    pointer-events: auto;
+    animation: dialog-fade 0.2s ease-out both;
+}
+
+@keyframes dialog-fade {
+    from {
+        opacity: 0;
+    }
+}
+
+.dialog {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 26rem;
+    max-width: 100%;
+    max-height: 85vh;
+    overflow: hidden;
+    border-radius: calc(var(--radius-panel) + 0.25rem); /* den største flade får de blødeste hjørner */
+    background: var(--glass-sheen), var(--glass-bg-strong);
+    border: 1px solid;
+    border-color: var(--glass-edge-hi) var(--glass-edge-lo) var(--glass-edge-lo) var(--glass-edge-hi);
+    box-shadow: var(--glass-shadow);
+    animation: dialog-in 0.24s var(--ease-out) both;
+}
+
+/* Glasset "vokser frem" i midten, som Apples dialoger */
+@keyframes dialog-in {
+    from {
+        opacity: 0;
+        transform: scale(0.94);
+    }
+}
+
+/* Apples "Title 3": fed og lidt strammere */
+.dialog-title {
+    padding: 1.25rem 1.4rem 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    overflow-wrap: anywhere;
+}
+
+/* Formularen fylder det, der er tilbage, og ruller, hvis der er mange felter */
+.dialog-form {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.dialog-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    padding: 0.9rem 1.4rem 1.1rem;
+    overflow-y: auto;
+}
+
+.dialog-body::-webkit-scrollbar {
+    width: 0.35rem;
+}
+
+.dialog-body::-webkit-scrollbar-thumb {
+    background: var(--fill);
+    border-radius: var(--radius-capsule);
+}
+
+/* Teksten i en "Er du sikker?" */
+.dialog-content {
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: var(--text-muted);
+    white-space: pre-line; /* \n i teksten bliver til nye linjer */
+    overflow-wrap: anywhere;
+}
+
+/* ---------- Felterne ---------- */
+
+.dialog-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.dialog-label {
+    font-size: max(calc(12px * var(--ui-scale)), 0.85rem);
+    font-weight: 600;
+}
+
+/* Stjernen ved påkrævede felter (lys rød, så den kan ses på glasset - mørkerød var for svag) */
+.dialog-required {
+    margin-left: 0.15rem;
+    color: var(--error-text);
+}
+
+.dialog-description {
+    font-size: max(calc(12px * var(--ui-scale)), 0.75rem);
+    color: var(--text-muted);
+}
+
+/* Ikonet står inde i feltet til venstre */
+.dialog-input-wrap {
+    position: relative;
+}
+
+.dialog-input-icon {
+    position: absolute;
+    top: 50%;
+    left: 0.75rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
+/* Felterne: en grå flade med en svag kant (som Apples tekstfelter). Kanten er der hele tiden,
+   så den kan blive lys ved fokus og rød ved fejl, uden at feltet skifter størrelse */
+.dialog-field input:not([type="checkbox"]),
+.dialog-field select,
+.dialog-field textarea {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    font-size: 0.9rem;
+    background: var(--fill-tertiary);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-control);
+    transition: border-color 0.12s ease, background-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+/* Plads til ikonet i venstre side. Står EFTER reglen ovenfor og med ".dialog-field" foran,
+   så den vinder over den almindelige padding */
+.dialog-field .dialog-input-wrap.has-icon input,
+.dialog-field .dialog-input-wrap.has-icon select {
+    padding-left: 2.2rem;
+}
+
+.dialog-field textarea {
+    min-height: 5rem;
+    line-height: 1.45;
+    resize: vertical;
+}
+
+.dialog-field input::placeholder,
+.dialog-field textarea::placeholder {
+    color: rgba(244, 244, 247, 0.66); /* pladsholder: lys nok til 4,5:1, men stadig tydeligt "grå" */
+}
+
+.dialog-field input:not([type="checkbox"]):focus,
+.dialog-field select:focus,
+.dialog-field textarea:focus {
+    outline: none;
+    background: var(--fill-secondary);
+    /* Lys kant og en 3px ring (som Apples fokus-ring), ikke rød: rød betyder fejl (se aria-invalid herunder) */
+    border-color: rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+}
+
+/* Rød kant ved fejl. Står efter :focus og er mindst lige så specifik som reglerne ovenfor, så den vinder
+   - også når feltet har fokus (det får det første felt med fejl automatisk) */
+.dialog-field input:not([type="checkbox"])[aria-invalid="true"],
+.dialog-field select[aria-invalid="true"],
+.dialog-field textarea[aria-invalid="true"] {
+    border-color: var(--type-error);
+    box-shadow: 0 0 0 3px rgba(255, 97, 101, 0.3); /* --type-error med lav opacity (color-mix() virker ikke) */
+}
+
+/* Talfeltets op/ned-pile tegnes ellers lyse på den mørke baggrund */
+.dialog-field input[type="number"] {
+    color-scheme: dark;
+}
+
+/* Listen i en <select> tegnes af browseren selv: mørk baggrund, så den passer til resten */
+.dialog-field select option {
+    color: var(--text);
+    background: #1c1c1e; /* Apples mørke baggrund (systemGray6) */
+}
+
+/* Afkrydsningsfelt: boksen og teksten på én linje */
+.dialog-check {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-size: 0.88rem;
+    cursor: pointer;
+}
+
+.dialog-check input {
+    width: 1.25rem;
+    height: 1.25rem;
+    accent-color: var(--brand);
+    cursor: pointer;
+}
+
+/* Synlig ring, når afkrydsningsfeltet har fokus fra tastaturet (Tab) */
+.dialog-check input:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.7);
+    outline-offset: 2px;
+}
+
+/* Fejl i et påkrævet afkrydsningsfelt: rød ring */
+.dialog-check input[aria-invalid="true"] {
+    outline: 2px solid var(--type-error);
+    outline-offset: 2px;
+}
+
+.dialog-error {
+    font-size: max(calc(12px * var(--ui-scale)), 0.8rem);
+    color: var(--error-text);
+}
+
+.dialog-error:empty {
+    display: none;
+}
+
+/* ---------- Knapperne ---------- */
+
+/* Knapperne står på en vandret række: kapsler i samme størrelse (HIG > Buttons). Den vigtigste skiller sig ud med
+   farve, ikke med størrelse. En svag skillelinje over dem, så en lang dialog, der ruller, ikke klippes midt i et felt */
+.dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    padding: 0.85rem 1.4rem 1.3rem;
+    border-top: 1px solid var(--separator);
+}
+
+/* Lige brede, som knapperne side om side i Apples dialoger */
+.dialog-button {
+    flex: 1 1 0;
+    min-width: 6.5rem;
+    padding: 0.6rem 1.25rem;
+    font-size: max(calc(13px * var(--ui-scale)), 0.9rem);
+    font-weight: 600;
+    border: 1px solid transparent;
+    border-radius: var(--radius-capsule);
+    cursor: pointer;
+    transition: filter 0.15s ease, background-color 0.15s ease;
+}
+
+/* Fokus-ringen fra tastaturet (Tab): en blød ring uden om kapslen, ikke en hård dobbelt kant */
+.dialog-button:focus-visible {
+    outline: 3px solid rgba(255, 255, 255, 0.4);
+    outline-offset: 2px;
+}
+
+/* Farvet glas: hovedfarven på fladen (ikke på teksten) og en lys kant øverst, ligesom glasset */
+.dialog-button.is-primary {
+    color: #fff;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent 60%), var(--brand);
+    border-color: rgba(255, 255, 255, 0.18) transparent transparent;
+    box-shadow: 0 0.35rem 1rem rgba(0, 0, 0, 0.28);
+}
+
+.dialog-button.is-primary:hover {
+    filter: brightness(1.12);
+}
+
+/* "Er du sikker?" med en handling, der ikke kan fortrydes: Apples røde med øget kontrast, så hvid tekst kan læses
+   (5,4:1). Lysner kun en smule ved hover, så kontrasten holder */
+.dialog-button.is-danger {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent 60%), #d70015;
+}
+
+.dialog-button.is-danger:hover {
+    filter: brightness(1.06);
+}
+
+.dialog-button.is-secondary {
+    color: var(--text);
+    background: var(--fill-secondary);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.dialog-button.is-secondary:hover {
+    background: var(--fill);
+}

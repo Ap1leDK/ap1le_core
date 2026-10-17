@@ -1,0 +1,491 @@
+/* Radaren i politibilen (js/radar.js). Glas-variablerne og grundopsætningen står i base.css.
+   Kun til at se på: den fanger ikke musen (pointer-events er slået fra for hele siden i base.css).
+   [ Foran ] [ egen fart, Låst ] [ Bagved ] - vandret, så den er lav og ikke dækker vejen */
+
+.radar {
+    position: fixed;
+    display: flex;
+    align-items: stretch;
+    gap: 0.5rem;
+    width: 40rem;
+    max-width: calc(100vw - 2rem);
+    padding: 0.6rem;
+    overflow: hidden; /* så skæret og pulsen følger de runde hjørner */
+    border-radius: var(--radius-panel);
+    background: var(--glass-sheen), var(--glass-bg-strong);
+    border: 1px solid;
+    border-color: var(--glass-edge-hi) var(--glass-edge-lo) var(--glass-edge-lo) var(--glass-edge-hi);
+    box-shadow: var(--glass-shadow);
+    /* --at = hvor den står, --from = hvor den glider ind fra. Begge sættes af placeringen herunder */
+    transform: var(--at);
+    animation: radar-in 0.22s var(--ease-out) both;
+}
+
+/* ---------- Placering (Config.Radar.Position) ----------
+   Nederst i midten rykker progress-bjælken og hjælpeteksten op over radaren (--radar-h, sat af js/radar.js) */
+.radar.is-bottom-center { left: 50%; bottom: 1.5rem; --at: translateX(-50%); --from: translate(-50%, 0.75rem); }
+.radar.is-top-center { left: 50%; top: 1.5rem; --at: translateX(-50%); --from: translate(-50%, -0.75rem); }
+
+@keyframes radar-in {
+    from {
+        opacity: 0;
+        transform: var(--from);
+    }
+}
+
+.radar.is-leaving {
+    animation: radar-out 0.2s ease-in forwards;
+}
+
+@keyframes radar-out {
+    to {
+        opacity: 0;
+        transform: var(--from);
+    }
+}
+
+/* Låst: en svag gul kant om hele radaren. En ring i currentColor med lav opacity, fordi color-mix() ikke virker
+   i FiveM's browser (Chrome 103) */
+.radar::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    border-radius: inherit;
+    border: 1px solid var(--type-warning);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.radar.is-locked::after {
+    opacity: 0.35;
+}
+
+/* ---------- Et køretøj (foran / bagved) ---------- */
+
+.radar-slot {
+    position: relative;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 0.3rem;
+    min-width: 0;
+    padding: 0.55rem 0.75rem 0.6rem;
+    /* Radarens radius minus luften (0,6rem), så hjørnerne følger hinanden (koncentrisk) */
+    border-radius: calc(var(--radius-panel) - 0.6rem);
+    background: var(--fill-tertiary);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Ingen data til denne plads: usynlig, men fylder stadig, så midten bliver i midten */
+.radar-slot.is-unused {
+    visibility: hidden;
+}
+
+/* EFTERLYST: rødt skær (::before) og en rød kant, der pulserer langsomt (::after) */
+.radar-slot::before,
+.radar-slot::after {
+    content: "";
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    bottom: -1px;
+    left: -1px;
+    border-radius: inherit;
+    opacity: 0;
+}
+
+.radar-slot.is-wanted::before {
+    background: var(--type-error);
+    opacity: 0.1;
+}
+
+.radar-slot.is-wanted::after {
+    border: 1px solid var(--type-error);
+    box-shadow: 0 0 0.8rem var(--type-error), inset 0 0 0.8rem var(--type-error);
+    opacity: 0.6; /* uden animation ("reducer bevægelse" i Windows) står kanten bare stille */
+    animation: radar-pulse 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes radar-pulse {
+    from {
+        opacity: 0.3;
+    }
+
+    to {
+        opacity: 0.85;
+    }
+}
+
+/* Indholdet står over skæret og pulsen (::before og ::after er også placeret, så z-index er nødvendig) */
+.radar-slot > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* Den røde flade gør baggrunden lysere: de dæmpede tekster lidt lysere, så de stadig kan læses (4,5:1) */
+.radar-slot.is-wanted .radar-label,
+.radar-slot.is-wanted .radar-unit,
+.radar-slot.is-wanted .radar-model {
+    color: rgba(235, 235, 245, 0.8);
+}
+
+/* Øverst: label og retning | nummerplade */
+.radar-slot-head {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 1.45rem;
+}
+
+/* "Foran" / "Bagved": Apples "Footnote" i den dæmpede farve, ingen versaler */
+.radar-label {
+    font-size: max(calc(12px * var(--ui-scale)), 0.78rem);
+    font-weight: 500;
+    color: var(--text-muted);
+    white-space: nowrap;
+    /* Lange tekster klippes med "…" i stedet for at skubbe pladen ud over kanten */
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Pil op = kører samme vej som os, pil ned = modkørende. Ingen pil = holder (næsten) stille */
+.radar-direction {
+    font-size: max(calc(11px * var(--ui-scale)), 0.66rem);
+    color: var(--text-muted);
+}
+
+/* Nummerpladen: en lille lys plade med mørk, fed tekst - som en rigtig plade */
+.radar-plate {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 62%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-left: auto;
+    padding: 0.14rem 0.45rem;
+    font-size: max(calc(12px * var(--ui-scale)), 0.95rem); /* betjentens vigtigste oplysning: lidt større */
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: 0.06em;
+    font-variant-numeric: tabular-nums;
+    color: #15171d;
+    white-space: nowrap;
+    background: linear-gradient(180deg, #ffffff 0%, #dfe3ea 100%);
+    border: 1px solid #0c0d11;
+    border-radius: 0.35rem;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.45), 0 0.15rem 0.4rem rgba(0, 0, 0, 0.35);
+}
+
+.radar-plate.is-blank {
+    visibility: hidden;
+}
+
+/* Målingen: fart | model | status */
+.radar-slot-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+}
+
+.radar-reading,
+.radar-own {
+    display: flex;
+    align-items: baseline;
+    gap: 0.3rem;
+    white-space: nowrap;
+}
+
+/* Store tal: strammere afstand mellem tegnene, som SF i store størrelser */
+.radar-speed {
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums; /* tallene har samme bredde, så teksten ikke hopper */
+}
+
+/* Ingen måling: "–" i den dæmpede farve */
+.radar-speed.is-blank,
+.radar-own-speed.is-blank {
+    color: var(--text-muted);
+}
+
+.radar-unit,
+.radar-own-unit {
+    font-size: max(calc(12px * var(--ui-scale)), 0.75rem);
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+.radar-model {
+    min-height: 1.15em;
+    font-size: max(calc(12px * var(--ui-scale)), 0.8rem);
+    font-weight: 500;
+    color: var(--text-muted);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* Statuslinjen: EFTERLYST · Anders Jensen. Statusteksten har tonens farve */
+.radar-status {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 1.3em;
+    font-size: max(calc(12px * var(--ui-scale)), 0.8rem);
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    color: var(--tone, var(--text-muted));
+}
+
+/* Statusteksten (fx EFTERLYST) krymper aldrig - det er detaljen (navnet), der klippes. Kun en tekst, der er
+   længere end hele linjen, klippes med "…" (max-width). Ingen versaler her: kun EFTERLYST (det kritiske) står
+   med versaler, og det gør det i selve teksten fra ap1le_police */
+.radar-status-text {
+    flex: none;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 700;
+}
+
+/* Ingen statustekst: så fylder den heller ikke (js/radar.js skjuler også "·") */
+.radar-status-text:empty {
+    display: none;
+}
+
+.radar-status-sep {
+    flex: none;
+    color: var(--text-muted);
+}
+
+.radar-status-detail {
+    flex: 0 1 auto;
+    min-width: 0;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Tonerne (status fra Lua) */
+.radar-slot.is-wanted { --tone: var(--error-text); }
+.radar-slot.is-ok { --tone: var(--type-success); }
+.radar-slot.is-info { --tone: var(--type-info); }
+.radar-slot.is-muted,
+.radar-slot.is-checking { --tone: var(--text-muted); }
+
+/* Intet køretøj: kun label og teksten i midten af pladsen (resten er usynligt, men fylder, så højden er den samme) */
+.radar-empty {
+    display: none;
+}
+
+.radar-slot.is-empty .radar-slot-body,
+.radar-slot.is-empty .radar-plate,
+.radar-slot.is-empty .radar-direction {
+    visibility: hidden;
+}
+
+.radar-slot.is-empty .radar-empty {
+    position: absolute;
+    top: 1.6rem;
+    right: 0.7rem;
+    bottom: 0.6rem;
+    left: 0.7rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: max(calc(12px * var(--ui-scale)), 0.82rem);
+    font-weight: 500;
+    color: var(--text-muted);
+    text-align: center;
+    overflow: hidden;
+}
+
+/* ---------- Midten: egen fart og Låst ---------- */
+
+.radar-center {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 0.25rem;
+    width: 9.5rem;
+    min-width: 0;
+    padding: 0.2rem 0.4rem;
+    text-align: center;
+}
+
+.radar-title {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    max-width: 100%;
+    font-size: max(calc(12px * var(--ui-scale)), 0.78rem);
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+.radar-title i {
+    flex: none;
+    color: var(--text-muted);
+}
+
+.radar-title-text {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.radar-own-speed {
+    font-size: 2.3rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.025em;
+    font-variant-numeric: tabular-nums;
+}
+
+.radar-own-label {
+    max-width: 100%;
+    font-size: max(calc(12px * var(--ui-scale)), 0.76rem);
+    font-weight: 500;
+    color: var(--text-muted);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* "Låst": et gult mærke, kun når radaren er låst. Højden skifter ikke: det er pladserne (foran/bagved), der
+   bestemmer radarens højde, og de fylder altid (også når de er usynlige) */
+.radar-lock {
+    position: relative;
+    display: none;
+    align-items: center;
+    gap: 0.35rem;
+    max-width: 100%;
+    margin-top: 0.15rem;
+    padding: 0.18rem 0.6rem;
+    font-size: max(calc(12px * var(--ui-scale)), 0.76rem);
+    font-weight: 700;
+    white-space: nowrap;
+    color: var(--type-warning);
+    border-radius: var(--radius-capsule);
+}
+
+/* Den svage gule flade bag mærket (currentColor med lav opacity, se .radar::after) */
+.radar-lock::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    border-radius: inherit;
+    background: currentColor;
+    border: 1px solid currentColor;
+    opacity: 0.16;
+}
+
+.radar-lock > * {
+    position: relative;
+}
+
+.radar-lock-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.radar.is-locked .radar-lock {
+    display: inline-flex;
+}
+
+/* ---------- Under et speedometer (is-speedo, sat af js/radar.js) ----------
+   Et andet script (fx ap1le_hud) har et rundt speedometer nederst i midten (SetSpeedo i Lua). Står radaren også
+   nederst i midten, bliver den et bredt panel, som cirklen sidder ned i: Foran til venstre, Bagved til højre og
+   "Låst" som en gul kapsel nederst i midten. Egen fart og titlen skjules (farten står på speedometeret).
+   Speedometeret er et andet NUI-vindue, og man ved ikke, hvilket der ligger øverst - derfor får panelet et rundt
+   hul (maske), hvor cirklen står, så de aldrig overlapper. Målene regnes af js/radar.js ud fra speedometeret:
+   --radar-bottom, --radar-width, --radar-mid (midterkolonnen) og hullets --radar-hole-y og --radar-hole-r.
+   Standarderne her passer til et speedometer på 21rem, 1,2rem fra bunden, løftet 2,2rem.
+   OBS: masken klipper også glassets ydre skygge (den falder næsten helt uden for skærmen her). De lyse kanter
+   indvendigt bliver */
+.radar.is-speedo {
+    display: grid;
+    grid-template-columns: 1fr var(--radar-mid, 19rem) 1fr;
+    gap: 0;
+    bottom: var(--radar-bottom, 1.2rem);
+    width: var(--radar-width, 52rem);
+    height: 7.4rem; /* fast, så hullet altid står samme sted (RADAR_SPEEDO_HEIGHT i js/radar.js) */
+    -webkit-mask-image: radial-gradient(circle at 50% var(--radar-hole-y, -5.3rem),
+        transparent var(--radar-hole-r, 10.8rem), #000 calc(var(--radar-hole-r, 10.8rem) + 1px));
+}
+
+/* Den gule kant om hele radaren bruges ikke her: "Låst" står som kapsel under cirklen */
+.radar.is-speedo::after {
+    display: none;
+}
+
+/* Pladserne er lavere (panelet er 7,4rem): lidt mindre luft og en lidt mindre fart, samme indhold */
+.radar.is-speedo .radar-slot {
+    gap: 0.15rem;
+    padding: 0.35rem 0.75rem 0.4rem;
+}
+
+.radar.is-speedo .radar-slot-head {
+    min-height: 1.35rem;
+}
+
+.radar.is-speedo .radar-plate {
+    padding: 0.1rem 0.45rem;
+}
+
+.radar.is-speedo .radar-slot-body {
+    gap: 0.05rem;
+}
+
+.radar.is-speedo .radar-speed {
+    font-size: 1.55rem;
+}
+
+.radar.is-speedo .radar-model,
+.radar.is-speedo .radar-status {
+    min-height: 1.2em;
+    line-height: 1.2;
+}
+
+.radar.is-speedo .radar-slot.is-empty .radar-empty {
+    top: 1.5rem;
+    bottom: 0.4rem;
+}
+
+/* Midterkolonnen er tom (cirklen står der). Kun "Låst" vises: en gul kapsel nederst i midten af panelet, midt i
+   pladsen mellem hullets bund og panelets bund (translate 50% = midten af kapslen står dér; - 1px for kanten, fordi
+   bottom måles inden for kanten, og hullet fra yderkanten). .radar er "position: fixed", så kapslen placeres i
+   forhold til hele panelet */
+.radar.is-speedo .radar-center {
+    visibility: hidden;
+}
+
+.radar.is-speedo .radar-lock {
+    position: absolute;
+    left: 50%;
+    bottom: max(0.75rem, calc((7.4rem - var(--radar-hole-y, -5.3rem) - var(--radar-hole-r, 10.8rem)) / 2 - 1px));
+    max-width: calc(var(--radar-mid, 19rem) - 2rem);
+    margin: 0;
+    padding: 0.16rem 0.65rem;
+    visibility: visible;
+    transform: translate(-50%, 50%);
+}
+
+.radar.is-speedo .radar-lock i {
+    display: none;
+}

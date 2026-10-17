@@ -1,0 +1,193 @@
+/* Notifikationer (js/notify.js). Glas-variablerne og grundopsætningen står i base.css */
+
+/* ---------- Placering ---------- */
+
+.notify-stack {
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    width: 21rem;
+    max-width: calc(100vw - 2rem);
+    /* Ingen max-height her: html/body skjuler allerede alt uden for skærmen, og det, der ryger ud,
+       er altid den ældste. En overflow: hidden her ville klippe glide-animationerne og skyggerne */
+}
+
+.notify-stack.top-right { top: 1.5rem; right: 1.5rem; }
+.notify-stack.top-left { top: 1.5rem; left: 1.5rem; }
+.notify-stack.top-center { top: 1.5rem; left: 50%; transform: translateX(-50%); }
+.notify-stack.bottom-right { bottom: 1.5rem; right: 1.5rem; }
+.notify-stack.bottom-left { bottom: 1.5rem; left: 1.5rem; }
+.notify-stack.bottom-center { bottom: 1.5rem; left: 50%; transform: translateX(-50%); }
+
+/* ---------- Én notifikation ---------- */
+
+.notify {
+    /* --accent er typens farve (sættes af klassen is-success osv. nedenfor) */
+    --accent: var(--type-info);
+
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem 1rem 0.85rem;
+    overflow: hidden; /* så streger og skær følger de runde hjørner */
+    border-radius: var(--radius-banner);
+
+    /* Glasset (variablerne står i base.css, så menuer og dialoger ser ens ud) */
+    background: var(--glass-sheen), var(--glass-bg);
+    border: 1px solid;
+    border-color: var(--glass-edge-hi) var(--glass-edge-lo) var(--glass-edge-lo) var(--glass-edge-hi);
+    box-shadow: var(--glass-shadow);
+
+    animation: notify-in 0.32s var(--ease-out) both;
+}
+
+.notify.is-success { --accent: var(--type-success); }
+.notify.is-error { --accent: var(--type-error); }
+.notify.is-warning { --accent: var(--type-warning); }
+.notify.is-info { --accent: var(--type-info); }
+
+/* Ikonet i en afrundet firkant i typens farve, som app-ikonet på et iOS-banner (radius ca. 27 % af størrelsen).
+   FiveM's browser er en ældre Chrome (version 103), som ikke kender color-mix(). Den svage farve laves
+   derfor med et lag (::before) i ikonets egen farve (currentColor) og lav opacity */
+.notify-icon {
+    position: relative;
+    display: flex;
+    flex: none;
+    justify-content: center;
+    align-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.6rem;
+    color: var(--accent);
+}
+
+/* Den farvede flade */
+.notify-icon::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    border-radius: inherit;
+    background-color: currentColor;
+    opacity: 0.18;
+}
+
+.notify-icon svg {
+    position: relative; /* over de to lag */
+    width: 1.3rem;
+    height: 1.3rem;
+}
+
+.notify-body {
+    flex: 1;
+    min-width: 0; /* lange ord må ikke gøre boksen bredere */
+    padding-top: 0.1rem;
+}
+
+.notify-title {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    overflow-wrap: anywhere;
+}
+
+/* "×3", når den samme notifikation kommer flere gange, mens den stadig vises.
+   Baggrunden laves som ved ikonet (::before i currentColor), fordi color-mix() ikke virker i FiveM */
+.notify-count {
+    position: relative;
+    isolation: isolate; /* så ::before med z-index -1 bliver bag teksten, men inde i mærket */
+    flex: none;
+    padding: 0.05rem 0.4rem;
+    font-size: max(calc(12px * var(--ui-scale)), 0.75rem);
+    font-weight: 600;
+    color: var(--text); /* hvid på den svage tonefarve: tonefarve på tonefarve kunne ikke læses over et lyst spil */
+    border-radius: var(--radius-capsule);
+}
+
+.notify-count::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background-color: currentColor;
+    opacity: 0.18;
+}
+
+.notify-count[hidden] {
+    display: none;
+}
+
+.notify-text {
+    margin-top: 0.2rem;
+    font-size: 0.88rem;
+    line-height: 1.4;
+    color: rgba(235, 235, 245, 0.8);
+    white-space: pre-line; /* linjeskift (\n) i teksten bliver til nye linjer */
+    overflow-wrap: anywhere;
+}
+
+.notify-text:empty {
+    display: none;
+}
+
+/* Tidslinjen nederst: en tynd kapsel inde i banneret, der krymper fra fuld bredde til ingenting, mens
+   notifikationen vises. Uden glød - farve bruges sparsomt */
+.notify-progress {
+    position: absolute;
+    left: 0.85rem;
+    right: 1rem;
+    bottom: 0.4rem;
+    height: 0.15rem;
+    border-radius: var(--radius-capsule);
+    background-color: var(--accent);
+    opacity: 0.7;
+    transform-origin: left;
+    animation: notify-progress var(--duration, 5000ms) linear forwards;
+}
+
+/* ---------- Animationer ---------- */
+
+/* Glider ind fra den side, den står i. --from sættes af placeringen herunder */
+@keyframes notify-in {
+    from {
+        opacity: 0;
+        transform: var(--from);
+    }
+}
+
+@keyframes notify-out {
+    to {
+        opacity: 0;
+        transform: var(--from);
+    }
+}
+
+/* Et kort skub og en lille skalering i stedet for at glide hele vejen ind fra kanten (kort og præcist, HIG > Motion) */
+.notify-stack.top-right .notify,
+.notify-stack.bottom-right .notify { --from: translateX(2rem) scale(0.96); }
+.notify-stack.top-left .notify,
+.notify-stack.bottom-left .notify { --from: translateX(-2rem) scale(0.96); }
+.notify-stack.top-center .notify { --from: translateY(-1.5rem) scale(0.96); }
+.notify-stack.bottom-center .notify { --from: translateY(1.5rem) scale(0.96); }
+
+.notify.is-leaving {
+    animation: notify-out 0.2s ease-in forwards;
+}
+
+@keyframes notify-progress {
+    to {
+        transform: scaleX(0);
+    }
+}

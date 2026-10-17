@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="da">
+
+<head>
+    <meta charset="UTF-8">
+    <title>ap1le_core</title>
+    <!-- Ikonerne ligger i resourcen selv (ingen internet-adresser), så de virker altid og hurtigt -->
+    <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/notify.css">
+    <link rel="stylesheet" href="css/menu.css">
+    <link rel="stylesheet" href="css/dialog.css">
+    <link rel="stylesheet" href="css/progress.css">
+    <link rel="stylesheet" href="css/textui.css">
+    <link rel="stylesheet" href="css/card.css">
+    <link rel="stylesheet" href="css/radar.css">
+</head>
+
+<body>
+    <!-- Notifikationerne (js/notify.js). Klassen (fx "top-right") bestemmer placeringen.
+         aria-live: skærmlæsere læser nye notifikationer op -->
+    <div id="notify-stack" class="notify-stack top-right" aria-live="polite"></div>
+
+    <!-- Radaren i politibilen (js/radar.js). Kun til at se på. aria-live="off": farten skifter flere gange i
+         sekundet, og skærmlæsere skal ikke læse hver ændring op -->
+    <div id="radar" class="radar is-bottom-center" role="status" aria-live="off" hidden></div>
+
+    <!-- Progress-bjælken (js/progress.js) -->
+    <div id="progress" class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" hidden></div>
+
+    <!-- Menuen (js/menu.js). Skjult, indtil Lua viser en -->
+    <aside id="menu" class="menu is-left" hidden></aside>
+
+    <!-- ID-kortet (js/card.js). Kun til at se på. Skal stå EFTER menuen: card.css skjuler det, når en menu i
+         samme side er åben -->
+    <div id="card" class="card is-right" role="status" hidden></div>
+
+    <!-- Hjælpeteksten "[E] Gå på vagt" (js/textui.js). Klassen bestemmer placeringen.
+         Skal stå EFTER menuen og ID-kortet: textui.css skjuler den, når en menu eller et kort i samme side vises -->
+    <div id="textui" class="textui right-center" role="status" hidden></div>
+
+    <!-- Dialogen (js/dialog.js). Skjult, indtil Lua viser en -->
+    <div id="dialog-root" hidden></div>
+
+    <!-- core.js først: de andre bruger dens funktioner. demo.js gør kun noget i en almindelig browser (?demo) -->
+    <script src="js/core.js"></script>
+    <script src="js/notify.js"></script>
+    <script src="js/menu.js"></script>
+    <script src="js/dialog.js"></script>
+    <script src="js/progress.js"></script>
+    <script src="js/textui.js"></script>
+    <script src="js/card.js"></script>
+    <script src="js/radar.js"></script>
+    <script src="js/demo.js"></script>
+</body>
+
+</html>
